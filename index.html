@@ -1,0 +1,425 @@
+import React, { useMemo, useState } from "react";
+
+// Single‑file React app — drop into a Vite/Next/CRA project or run in this preview.
+// Clean Tailwind UI, no external APIs. Extend the catalog below as you like.
+
+const CATALOG = [
+  {
+    id: 1,
+    name: "Bleu de Chanel EDP",
+    brand: "Chanel",
+    tags: ["fresh", "woody", "citrus", "versatile"],
+    vibe: ["fresh", "out-of-the-shower"],
+    longevityHours: 8,
+    strength: "EDP",
+    priceUSD: 150,
+    notes: "Grapefruit, incense, woods. Office-safe and night-ready.",
+  },
+  {
+    id: 2,
+    name: "Dior Sauvage EDT",
+    brand: "Dior",
+    tags: ["fresh", "spicy", "ambroxan", "projecting"],
+    vibe: ["fresh"],
+    longevityHours: 7,
+    strength: "EDT",
+    priceUSD: 120,
+    notes: "Bergamot, pepper, ambroxan. Crowd-pleaser, strong projection.",
+  },
+  {
+    id: 3,
+    name: "Versace Dylan Blue",
+    brand: "Versace",
+    tags: ["fresh", "aquatic", "fruity", "mass-appeal"],
+    vibe: ["fresh", "out-of-the-shower"],
+    longevityHours: 6,
+    strength: "EDT",
+    priceUSD: 85,
+    notes: "Aquatic citrus with musk and incense. Great value daily driver.",
+  },
+  {
+    id: 4,
+    name: "Prada L'Homme",
+    brand: "Prada",
+    tags: ["clean", "soapy", "iris", "office"],
+    vibe: ["out-of-the-shower", "fresh"],
+    longevityHours: 7,
+    strength: "EDT",
+    priceUSD: 110,
+    notes: "Powdery clean iris. Ultra-fresh, 'stepped-out-of-the-shower' vibe.",
+  },
+  {
+    id: 5,
+    name: "YSL Y EDP",
+    brand: "Yves Saint Laurent",
+    tags: ["sweet", "fresh", "apple", "ambroxan"],
+    vibe: ["fresh", "sweet"],
+    longevityHours: 9,
+    strength: "EDP",
+    priceUSD: 135,
+    notes: "Blue-fragrance DNA with a sweet edge. Night & day friendly.",
+  },
+  {
+    id: 6,
+    name: "Montblanc Explorer",
+    brand: "Montblanc",
+    tags: ["fresh", "woody", "fruity"],
+    vibe: ["fresh"],
+    longevityHours: 7,
+    strength: "EDP",
+    priceUSD: 95,
+    notes: "Citrus/woody with adventure vibe. Affordable and versatile.",
+  },
+  {
+    id: 7,
+    name: "Nautica Voyage",
+    brand: "Nautica",
+    tags: ["aquatic", "green", "casual"],
+    vibe: ["fresh", "out-of-the-shower"],
+    longevityHours: 5,
+    strength: "EDT",
+    priceUSD: 22,
+    notes: "Crisp apple & aquatic musk. Budget king for summer and school.",
+  },
+  {
+    id: 8,
+    name: "Acqua di Giò EDP (2022)",
+    brand: "Giorgio Armani",
+    tags: ["fresh", "aquatic", "citrus", "elegant"],
+    vibe: ["fresh", "out-of-the-shower"],
+    longevityHours: 8,
+    strength: "EDP",
+    priceUSD: 128,
+    notes: "Modern marine citrus. Clean, elegant, never offensive.",
+  },
+  {
+    id: 9,
+    name: "Jean Paul Gaultier Le Beau Le Parfum",
+    brand: "Jean Paul Gaultier",
+    tags: ["sweet", "coconut", "vanilla", "sexy"],
+    vibe: ["sweet"],
+    longevityHours: 9,
+    strength: "Parfum",
+    priceUSD: 140,
+    notes: "Coconut-vanilla tropical sweetness with depth. Great for evenings.",
+  },
+  {
+    id: 10,
+    name: "Azzaro Wanted by Night",
+    brand: "Azzaro",
+    tags: ["sweet", "spicy", "warm", "clubbing"],
+    vibe: ["sweet"],
+    longevityHours: 8,
+    strength: "EDP",
+    priceUSD: 95,
+    notes: "Cinnamon and tobacco-like warmth. Night out beast for the price.",
+  },
+  {
+    id: 11,
+    name: "CK One",
+    brand: "Calvin Klein",
+    tags: ["fresh", "citrus", "tea", "unisex"],
+    vibe: ["fresh", "out-of-the-shower"],
+    longevityHours: 4,
+    strength: "EDT",
+    priceUSD: 40,
+    notes: "Light citrus and green tea. Great starter and gym scent.",
+  },
+  {
+    id: 12,
+    name: "Creed Aventus",
+    brand: "Creed",
+    tags: ["fruity", "smoky", "pineapple", "luxury"],
+    vibe: ["fresh", "sweet"],
+    longevityHours: 9,
+    strength: "EDP",
+    priceUSD: 365,
+    notes: "Iconic pineapple/wood blend. Statement maker (and pricey).",
+  },
+];
+
+const VIBES = [
+  { key: "fresh", label: "Fresh" },
+  { key: "out-of-the-shower", label: "Out of the shower" },
+  { key: "sweet", label: "Sweet" },
+  { key: "woody", label: "Woody" },
+  { key: "spicy", label: "Spicy" },
+  { key: "aquatic", label: "Aquatic" },
+];
+
+export default function FragranceFinder() {
+  const [selectedVibes, setSelectedVibes] = useState(["fresh"]);
+  const [maxPrice, setMaxPrice] = useState(150);
+  const [minLongevity, setMinLongevity] = useState(6);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("score"); // score | price | longevity | name
+
+  const toggleVibe = (key) => {
+    setSelectedVibes((prev) =>
+      prev.includes(key) ? prev.filter((v) => v !== key) : [...prev, key]
+    );
+  };
+
+  const scoreItem = (item) => {
+    let score = 0;
+    // vibe match — weight 60
+    const vibeMatches = selectedVibes.filter((v) =>
+      (item.vibe || []).includes(v) || (item.tags || []).includes(v)
+    ).length;
+    score += vibeMatches * 30; // each vibe worth 30
+
+    // price suitability — weight 20 (more points if under budget)
+    if (item.priceUSD <= maxPrice) {
+      // cheap gets a small bonus
+      const priceHeadroom = Math.max(0, maxPrice - item.priceUSD);
+      score += 10 + Math.min(10, priceHeadroom / (maxPrice || 1) * 10);
+    }
+
+    // longevity match — weight 20
+    const lon = item.longevityHours || 0;
+    if (lon >= minLongevity) {
+      score += 10 + Math.min(10, (lon - minLongevity) * 2);
+    }
+
+    // tiny bonus if search term hits name/brand/notes
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      if (
+        item.name.toLowerCase().includes(q) ||
+        item.brand.toLowerCase().includes(q) ||
+        (item.notes || "").toLowerCase().includes(q)
+      ) {
+        score += 8;
+      }
+    }
+
+    return Math.round(score);
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let out = CATALOG.filter((it) => {
+      const vibeOk =
+        selectedVibes.length === 0 ||
+        selectedVibes.some((v) => (it.vibe || []).includes(v) || (it.tags || []).includes(v));
+      const priceOk = it.priceUSD <= maxPrice;
+      const longOk = it.longevityHours >= minLongevity;
+      const searchOk =
+        !q ||
+        it.name.toLowerCase().includes(q) ||
+        it.brand.toLowerCase().includes(q) ||
+        (it.notes || "").toLowerCase().includes(q);
+      return vibeOk && priceOk && longOk && searchOk;
+    });
+
+    return out
+      .map((it) => ({ ...it, _score: scoreItem(it) }))
+      .sort((a, b) => {
+        if (sortBy === "price") return a.priceUSD - b.priceUSD;
+        if (sortBy === "longevity") return b.longevityHours - a.longevityHours;
+        if (sortBy === "name") return a.name.localeCompare(b.name);
+        return b._score - a._score; // default by score
+      });
+  }, [selectedVibes, maxPrice, minLongevity, search, sortBy]);
+
+  const clearAll = () => {
+    setSelectedVibes([]);
+    setMaxPrice(200);
+    setMinLongevity(5);
+    setSearch("");
+    setSortBy("score");
+  };
+
+  const randomTopPick = () => {
+    const top = filtered.slice(0, 5);
+    if (!top.length) return null;
+    return top[Math.floor(Math.random() * top.length)];
+  };
+
+  const topPick = randomTopPick();
+
+  return (
+    <div className="min-h-screen bg-neutral-50 text-neutral-900">
+      <header className="sticky top-0 z-10 backdrop-blur border-b bg-white/70">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
+          <div className="text-2xl font-bold">Fragrance Finder</div>
+          <div className="text-sm text-neutral-600">Pick your vibe → get cologne recommendations</div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 py-6 grid md:grid-cols-3 gap-6">
+        {/* Controls */}
+        <section className="md:col-span-1">
+          <div className="bg-white rounded-2xl shadow p-4 md:p-5 space-y-5">
+            <h2 className="text-lg font-semibold">Your preferences</h2>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Vibe</label>
+              <div className="flex flex-wrap gap-2">
+                {VIBES.map((v) => (
+                  <button
+                    key={v.key}
+                    onClick={() => toggleVibe(v.key)}
+                    className={`px-3 py-1.5 rounded-full border transition shadow-sm ${
+                      selectedVibes.includes(v.key)
+                        ? "bg-black text-white border-black"
+                        : "bg-white hover:bg-neutral-100 border-neutral-300"
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-neutral-500 mt-2">Tip: You can pick multiple vibes (e.g., Fresh + Sweet).</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Max price (${maxPrice})</label>
+              <input
+                type="range"
+                min={15}
+                max={400}
+                step={5}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(Number(e.target.value))}
+                className="w-full"
+              />
+              <div className="text-xs text-neutral-600">Drag to set your budget.</div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Minimum longevity (hours): {minLongevity}h</label>
+              <input
+                type="range"
+                min={3}
+                max={12}
+                step={1}
+                value={minLongevity}
+                onChange={(e) => setMinLongevity(Number(e.target.value))}
+                className="w-full"
+              />
+              <div className="text-xs text-neutral-600">How long do you want it to last?</div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Search (name/brand/notes)</label>
+              <input
+                className="w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black/20"
+                placeholder="e.g., coconut, Chanel, Aventus"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-2 items-center">
+              <label className="text-sm font-medium">Sort by</label>
+              <select
+                className="rounded-xl border px-3 py-2"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="score">Best match</option>
+                <option value="price">Price (low → high)</option>
+                <option value="longevity">Longevity (high → low)</option>
+                <option value="name">Name (A → Z)</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={clearAll}
+                className="px-4 py-2 rounded-xl border border-neutral-300 hover:bg-neutral-100"
+              >
+                Clear
+              </button>
+              <a
+                href="#recommendations"
+                className="px-4 py-2 rounded-xl bg-black text-white"
+              >
+                See results
+              </a>
+            </div>
+
+            {topPick && (
+              <div className="mt-4 p-4 rounded-xl border bg-gradient-to-br from-neutral-50 to-white">
+                <div className="text-sm text-neutral-600 mb-1">Random top pick</div>
+                <div className="font-semibold">{topPick.name}</div>
+                <div className="text-sm text-neutral-700">by {topPick.brand} — ${topPick.priceUSD} • {topPick.longevityHours}h</div>
+                <div className="text-xs text-neutral-600 mt-1">Refresh the page for another pick or tweak your filters.</div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Results */}
+        <section id="recommendations" className="md:col-span-2">
+          <div className="flex items-end justify-between mb-3">
+            <h2 className="text-lg font-semibold">Recommendations</h2>
+            <div className="text-sm text-neutral-600">{filtered.length} match{filtered.length === 1 ? "" : "es"}</div>
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow p-6 text-center text-neutral-600">
+              No matches yet. Try lowering minimum longevity or raising max price.
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map((it) => (
+                <article key={it.id} className="bg-white rounded-2xl shadow hover:shadow-md transition overflow-hidden border border-neutral-200">
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-semibold leading-tight">{it.name}</h3>
+                        <div className="text-sm text-neutral-600">{it.brand}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">${it.priceUSD}</div>
+                        <div className="text-xs text-neutral-600">{it.strength} • {it.longevityHours}h</div>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-neutral-700">{it.notes}</p>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {[...(it.vibe || []), ...(it.tags || [])]
+                        .slice(0, 6)
+                        .map((t, idx) => (
+                          <span key={idx} className="text-xs px-2 py-1 rounded-full bg-neutral-100 border border-neutral-200">{t}</span>
+                        ))}
+                    </div>
+
+                    <div className="pt-2 border-t text-xs text-neutral-600">
+                      Match score: <span className="font-semibold text-neutral-900">{scoreItem(it)}</span>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => alert(`Why it matches:\n• Vibe overlap: ${selectedVibes.filter(v => (it.vibe||[]).includes(v) || (it.tags||[]).includes(v)).join(', ') || '—'}\n• Under budget: ${it.priceUSD <= maxPrice ? 'Yes' : 'No'}\n• Longevity ≥ ${minLongevity}h: ${it.longevityHours >= minLongevity ? 'Yes' : 'No'}`)}
+                        className="px-3 py-1.5 rounded-xl border border-neutral-300 hover:bg-neutral-100 text-sm"
+                      >
+                        Why this pick
+                      </button>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(`${it.name} by ${it.brand}`)}
+                        className="px-3 py-1.5 rounded-xl bg-black text-white text-sm"
+                      >
+                        Copy name
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+
+      <footer className="max-w-6xl mx-auto px-4 pb-10 pt-6 text-xs text-neutral-500">
+        <div>
+          ✨ Tip: Expand the catalog with your favorite scents. Each item supports
+          name, brand, tags, vibe, longevityHours, strength, priceUSD, notes.
+        </div>
+      </footer>
+    </div>
+  );
+}
